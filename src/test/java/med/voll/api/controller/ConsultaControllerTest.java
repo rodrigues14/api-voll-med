@@ -1,8 +1,6 @@
 package med.voll.api.controller;
 
-import med.voll.api.domain.consulta.AgendaDeConsultas;
-import med.voll.api.domain.consulta.DadosAgendamentoConsulta;
-import med.voll.api.domain.consulta.DadosDetalhamentoConsulta;
+import med.voll.api.domain.consulta.*;
 import med.voll.api.domain.medico.Especialidade;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +12,7 @@ import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -22,6 +21,7 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @SpringBootTest
@@ -81,5 +81,38 @@ class ConsultaControllerTest {
         assertThat(response.getContentAsString()).isEqualTo(jsonEsperado);
     }
 
+
+    @Test
+    @DisplayName("Deveria devolver codigo 400 quando as informacoes para cancelamento estão incorretas")
+    @WithMockUser
+    void cancelar_cenario1() throws Exception {
+        var response = mvc.perform(delete("/consultas"))
+                .andReturn().getResponse();
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Autowired
+    private JacksonTester<DadosCancelamentoConsulta> dadosCancelamentoConsultaJson;
+
+    @Test
+    @DisplayName("Deveria devolver codigo http 204 as quando informacoes do cancelamento estao validas")
+    @WithMockUser
+    void cancelar_cenario2() throws Exception {
+        var motivoCancelamento = MotivoCancelamento.MEDICO_CANCELOU;
+
+        var response = mvc
+                .perform(
+                        delete("/consultas")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(dadosCancelamentoConsultaJson
+                                        .write(
+                                                new DadosCancelamentoConsulta(1l, motivoCancelamento)
+                                        ).getJson()
+                                )
+                ).andReturn().getResponse();
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT.value());
+    }
 
 }
